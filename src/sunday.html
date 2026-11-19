@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sunday Live Generator</title>
+<style>
+/*COMMON_CSS*/
+  .drop .thumb { border-radius: 10px; width: 46px; height: 62px; background-position: center top; }
+  .card .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: 0; }
+  .note { font-size: 12px; color: var(--muted); margin: 4px 0 0; }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; background: #eef1ef; border-radius: 8px; padding: 3px; margin-bottom: 4px; }
+  .seg button { border: 0; background: none; padding: 7px; font-weight: 600; color: var(--muted); }
+  .seg button[aria-checked="true"] { background: #fff; color: var(--green); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+  [lang="hi"] input, input[lang="hi"] { font-family: "Anek Devanagari", "Sora", sans-serif; font-size: 15px; }
+</style>
+</head>
+<body>
+<header><h1>Sunday Live · Creative Generator</h1><span class="tag">LIVE SESSION</span><!--NAV--></header>
+
+<main>
+  <section class="panel">
+    <div class="card">
+      <h2>Topic</h2>
+      <div class="seg" role="radiogroup" aria-label="Topic language">
+        <button type="button" role="radio" data-lang="en" aria-checked="true">English</button>
+        <button type="button" role="radio" data-lang="hi" aria-checked="false" lang="hi">हिंदी</button>
+      </div>
+      <div data-lang-fields="en">
+        <label for="t1">Line 1 (big, orange)</label><input type="text" id="t1" placeholder="ANANT" maxlength="24">
+        <label for="t2">Line 2 (bold, black)</label><input type="text" id="t2" placeholder="CHATURDASHI" maxlength="30">
+        <label for="t3">Subtitle</label><input type="text" id="t3" placeholder="Significance &amp; Remedies" maxlength="48">
+        <p class="note">Lines 1 and 2 are set in capitals automatically. Long words shrink to fit.</p>
+      </div>
+      <div data-lang-fields="hi" hidden lang="hi">
+        <label for="h1">Title (orange)</label><input type="text" id="h1" placeholder="मांगलिक दोष" maxlength="30">
+        <label for="h2">Subtitle (black)</label><input type="text" id="h2" placeholder="मिथक, सत्य और शास्त्रीय दृष्टि" maxlength="60">
+        <p class="note">Type in Hindi directly, or paste from Google Input Tools. Long lines shrink to fit.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Date &amp; time</h2>
+      <div class="row">
+        <div><label for="date">Date</label><input type="date" id="date"></div>
+        <div><label for="time">Time (IST)</label><input type="time" id="time" value="15:00"></div>
+      </div>
+      <div class="hint" id="dateHint"></div>
+      <button class="link" id="nextSun" type="button">Set to next Sunday</button>
+    </div>
+
+    <div class="card" data-slot="left">
+      <h2><span class="swatch" style="background:#4a6aa5"></span>Astrologer 1 (blue card)</h2>
+      <div class="drop" tabindex="0"><div class="thumb"></div><div class="txt"><b>Upload photo</b>A cut-out PNG looks best. Plain photos work too.</div></div>
+      <input type="file" accept="image/*" hidden>
+      <div class="zoom"><span>Zoom</span><input type="range" min="0.5" max="3" step="0.01" value="1"><button class="link reset" type="button">Reset</button></div>
+      <label>Name</label><input type="text" class="name" placeholder="e.g. Revathi Shridhar" maxlength="40">
+      <div class="row">
+        <div><label>Title, line 1</label><input type="text" class="t1" value="Mentor &amp; Panel" maxlength="30"></div>
+        <div><label>Title, line 2</label><input type="text" class="t2" value="Astrologer" maxlength="30"></div>
+      </div>
+    </div>
+
+    <div class="card" data-slot="right">
+      <h2><span class="swatch" style="background:#f7a26a"></span>Astrologer 2 (orange card)</h2>
+      <div class="drop" tabindex="0"><div class="thumb"></div><div class="txt"><b>Upload photo</b>A cut-out PNG looks best. Plain photos work too.</div></div>
+      <input type="file" accept="image/*" hidden>
+      <div class="zoom"><span>Zoom</span><input type="range" min="0.5" max="3" step="0.01" value="1"><button class="link reset" type="button">Reset</button></div>
+      <label>Name</label><input type="text" class="name" placeholder="e.g. Shweta Gupta" maxlength="40">
+      <div class="row">
+        <div><label>Title, line 1</label><input type="text" class="t1" value="Mentor &amp; Panel" maxlength="30"></div>
+        <div><label>Title, line 2</label><input type="text" class="t2" value="Astrologer" maxlength="30"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Download</h2>
+      <label for="size">Size</label>
+      <select id="size">
+        <option value="1920">1920 × 1080 (Full HD)</option>
+        <option value="3840">3840 × 2160 (4K, print quality)</option>
+        <option value="1280">1280 × 720 (light, WhatsApp)</option>
+      </select>
+      <div class="btns">
+        <button class="primary" id="dlPng" type="button">Download PNG</button>
+        <button class="secondary" id="dlJpg" type="button">JPG</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="preview">
+    <div class="stage">
+<!--ARTWORK-->
+    </div>
+    <p class="tip">Drag a photo in the preview to move it. Scroll over it, or use the slider, to zoom. Click an empty card to upload. Grey text in the form is only a placeholder: type your own before downloading.</p>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  const art = document.getElementById('art');
+  const $ = (id) => document.getElementById(id);
+  const VB_W = 24998.96, VB_H = 14069.39;
+  const CARD_TOP = 1898.8, PHOTO_BOTTOM = 10420;
+  const TOPIC_LEFT = 13300, TOPIC_RIGHT = 24650;   // safe area for the topic lines
+  const NAME_MAX_W = 5000;
+
+  const slots = {
+    left:  { label: 'Astrologer 1', x: 702.8,  w: 5756.3, img: null, iw: 0, ih: 0, zoom: 1, ox: 0, oy: 0 },
+    right: { label: 'Astrologer 2', x: 6773.1, w: 5771.3, img: null, iw: 0, ih: 0, zoom: 1, ox: 0, oy: 0 },
+  };
+  const card = (key) => document.querySelector(`.card[data-slot="${key}"]`);
+
+  let toastT;
+  function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2800); }
+
+  // ---------- text
+  const baseSize = new Map();
+  const maxW = new Map();
+  function centre(el, maxWidth) {
+    // the template's text is the original design, so its current width tells us the designed centre
+    const c = parseFloat(el.getAttribute('x')) + el.getComputedTextLength() / 2;
+    el.setAttribute('x', c.toFixed(2));
+    el.setAttribute('text-anchor', 'middle');
+    baseSize.set(el, parseFloat(getComputedStyle(el).fontSize));
+    maxW.set(el, typeof maxWidth === 'function' ? maxWidth(c) : maxWidth);
+    return c;
+  }
+  function fit(el, text) {
+    el.textContent = text;
+    const base = baseSize.get(el), limit = maxW.get(el);
+    el.style.fontSize = base + 'px';
+    const len = text ? el.getComputedTextLength() : 0;
+    if (len > limit) el.style.fontSize = (base * limit / len).toFixed(2) + 'px';
+  }
+  const val = (input) => input.value.trim() || input.placeholder;
+
+  // ---------- topic: English (3 lines, Montserrat) or Hindi (2 lines, Anek Devanagari)
+  const TOPIC_IDS = ['topic1', 'topic2', 'topic3'];
+  const LAYOUT = {
+    en: { topic1: { cls: 'fil9 fnt0', y: 4893.78 }, topic2: { cls: 'fil10 fnt1', y: 6096.51 }, topic3: { cls: 'fil10 fnt2', y: 7149.74 } },
+    // positions from the Hindi version of the design (webinar.svg); x is measured from the sample text
+    hi: { topic1: { cls: 'fil9 hiT1', y: 5506.37, startX: 13857.4, sample: 'मांगलिक दोष' },
+          topic2: { cls: 'fil10 hiT2', y: 6581.56, startX: 14106.32, sample: 'मिथक, सत्य और शास्त्रीय दृष्टि' },
+          topic3: null },
+  };
+  let lang = 'en';
+  const topicMax = (c) => 2 * Math.min(c - TOPIC_LEFT, TOPIC_RIGHT - c);
+
+  function measureLayouts() {
+    for (const id of TOPIC_IDS) {
+      const el = $(id);
+      const en = LAYOUT.en[id];
+      en.cx = centre(el, topicMax); en.base = baseSize.get(el); en.max = maxW.get(el);
+      const hi = LAYOUT.hi[id];
+      if (!hi) continue;
+      el.setAttribute('class', hi.cls); el.setAttribute('text-anchor', 'start');
+      el.setAttribute('x', hi.startX); el.style.fontSize = '';
+      el.textContent = hi.sample;
+      hi.cx = hi.startX + el.getComputedTextLength() / 2;
+      hi.base = parseFloat(getComputedStyle(el).fontSize); hi.max = topicMax(hi.cx);
+    }
+  }
+  function applyLang(next) {
+    lang = next;
+    for (const id of TOPIC_IDS) {
+      const el = $(id), cfg = LAYOUT[lang][id];
+      if (!cfg) { el.style.display = 'none'; continue; }
+      el.style.display = '';
+      el.setAttribute('class', cfg.cls);
+      el.setAttribute('x', cfg.cx.toFixed(2)); el.setAttribute('y', cfg.y);
+      el.setAttribute('text-anchor', 'middle');
+      baseSize.set(el, cfg.base); maxW.set(el, cfg.max);
+    }
+    document.querySelectorAll('.seg button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.lang === lang)));
+    document.querySelectorAll('[data-lang-fields]').forEach((d) => { d.hidden = d.dataset.langFields !== lang; });
+    try { localStorage.setItem('sunday-lang', lang); } catch (e) { /* storage unavailable */ }
+    renderTopic();
+  }
+  function renderTopic() {
+    if (lang === 'hi') {
+      fit($('topic1'), val($('h1')));
+      fit($('topic2'), val($('h2')));
+      return;
+    }
+    fit($('topic1'), val($('t1')).toUpperCase());
+    fit($('topic2'), val($('t2')).toUpperCase());
+    fit($('topic3'), val($('t3')));
+  }
+
+  // ---------- date / time
+  const MON = ['JAN.', 'FEB.', 'MAR.', 'APR.', 'MAY', 'JUNE', 'JULY', 'AUG.', 'SEP.', 'OCT.', 'NOV.', 'DEC.'];
+  const DAYS = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+  const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  function nextSunday() { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + ((7 - d.getDay()) % 7 || 7)); return d; }
+  function renderDate() {
+    const v = $('date').value; if (!v) return;
+    const [y, m, d] = v.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    $('sDate').textContent = `${d} ${MON[m - 1]} `;
+    $('sDay').textContent = `${DAYS[dt.getDay()]},`;
+    const hint = $('dateHint');
+    if (dt.getDay() !== 0) { hint.textContent = `Heads up: this date is a ${dt.toLocaleDateString('en-IN', { weekday: 'long' })}.`; hint.className = 'hint warn'; }
+    else { hint.textContent = dt.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); hint.className = 'hint'; }
+  }
+  function renderTime() {
+    let [h, mi] = ($('time').value || '15:00').split(':').map(Number);
+    const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
+    $('timeLine').textContent = `${h}:${String(mi).padStart(2, '0')} ${ap} IST`;
+  }
+
+  // ---------- photos
+  function layoutPhoto(key) {
+    const s = slots[key], img = $(key + 'Img'), ph = $(key + 'PhText'), hit = $(key + 'Hit');
+    const has = !!s.img;
+    ph.style.display = has ? 'none' : '';
+    img.style.display = has ? '' : 'none';
+    hit.classList.toggle('empty', !has);
+    if (!has) return;
+    const bw = s.w, bh = PHOTO_BOTTOM - CARD_TOP;
+    const base = Math.max(bw / s.iw, bh / s.ih);
+    const W = s.iw * base * s.zoom, H = s.ih * base * s.zoom;
+    const mx = Math.abs(W - bw) / 2, my = Math.abs(H - bh) / 2;
+    s.ox = Math.max(-mx, Math.min(mx, s.ox));
+    s.oy = Math.max(-my, Math.min(my, s.oy));
+    img.setAttribute('x', (s.x + bw / 2 - W / 2 + s.ox).toFixed(2));
+    img.setAttribute('y', (CARD_TOP + bh / 2 - H / 2 + s.oy).toFixed(2));
+    img.setAttribute('width', W.toFixed(2));
+    img.setAttribute('height', H.toFixed(2));
+  }
+  function resetPhoto(key) {
+    const s = slots[key];
+    s.zoom = 1; s.ox = 0; s.oy = 1e9;             // clamp pins the top of the photo to the top of the card
+    card(key).querySelector('input[type=range]').value = 1;
+    layoutPhoto(key);
+  }
+  function loadFile(key, file) {
+    if (!file || !file.type.startsWith('image/')) { toast('Please choose an image file'); return; }
+    const r = new FileReader();
+    r.onload = () => setPhoto(key, r.result, file.type);
+    r.readAsDataURL(file);
+  }
+  function setPhoto(key, src, type) {
+    const im = new Image();
+    im.onload = () => {
+      const MAX = 1800;
+      let url = src, w = im.naturalWidth, h = im.naturalHeight;
+      if (Math.max(w, h) > MAX) {
+        const k = MAX / Math.max(w, h); w = Math.round(w * k); h = Math.round(h * k);
+        const c = document.createElement('canvas'); c.width = w; c.height = h;
+        c.getContext('2d').drawImage(im, 0, 0, w, h);
+        url = type === 'image/png' ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', 0.92);
+      }
+      Object.assign(slots[key], { img: url, iw: w, ih: h });
+      $(key + 'Img').setAttribute('href', url);
+      card(key).querySelector('.thumb').style.backgroundImage = `url("${url}")`;
+      card(key).querySelector('.txt b').textContent = 'Change photo';
+      resetPhoto(key);
+    };
+    im.onerror = () => toast('Could not read that image');
+    im.src = src;
+  }
+
+  function wireSlot(key) {
+    const c = card(key), drop = c.querySelector('.drop'), file = c.querySelector('input[type=file]');
+    const range = c.querySelector('input[type=range]'), hit = $(key + 'Hit');
+    drop.addEventListener('click', () => file.click());
+    drop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); file.click(); } });
+    file.addEventListener('change', () => { loadFile(key, file.files[0]); file.value = ''; });
+    for (const el of [drop, hit]) {
+      el.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); });
+      el.addEventListener('dragleave', () => drop.classList.remove('over'));
+      el.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('over'); loadFile(key, e.dataTransfer.files[0]); });
+    }
+    range.addEventListener('input', () => { slots[key].zoom = +range.value; layoutPhoto(key); });
+    c.querySelector('.reset').addEventListener('click', () => slots[key].img && resetPhoto(key));
+
+    const name = c.querySelector('.name'), t1 = c.querySelector('.t1'), t2 = c.querySelector('.t2');
+    name.addEventListener('input', () => fit($(key + 'Name'), val(name)));
+    t1.addEventListener('input', () => fit($(key + 'T1'), t1.value.trim()));
+    t2.addEventListener('input', () => fit($(key + 'T2'), t2.value.trim()));
+
+    let drag = null, moved = false;
+    hit.addEventListener('pointerdown', (e) => { moved = false; if (!slots[key].img) return; drag = { x: e.clientX, y: e.clientY }; hit.setPointerCapture(e.pointerId); });
+    hit.addEventListener('pointermove', (e) => {
+      if (!drag) return;
+      const k = VB_W / art.getBoundingClientRect().width;
+      slots[key].ox += (e.clientX - drag.x) * k; slots[key].oy += (e.clientY - drag.y) * k;
+      drag = { x: e.clientX, y: e.clientY }; moved = true; layoutPhoto(key);
+    });
+    hit.addEventListener('pointerup', () => { drag = null; });
+    hit.addEventListener('click', () => { if (!slots[key].img && !moved) file.click(); });
+    hit.addEventListener('wheel', (e) => {
+      if (!slots[key].img) return;
+      e.preventDefault();
+      const s = slots[key];
+      s.zoom = Math.max(0.5, Math.min(3, s.zoom * Math.exp(-e.deltaY * 0.0015)));
+      range.value = s.zoom; layoutPhoto(key);
+    }, { passive: false });
+  }
+
+  // ---------- export
+  async function download(type) {
+    const topicIn = lang === 'hi' ? $('h1') : $('t1');
+    if (!topicIn.value.trim()) { toast('Type the topic first'); topicIn.focus(); return; }
+    for (const [k, s] of Object.entries(slots)) {
+      if (!s.img) { toast(`Add the photo for ${s.label}`); return; }
+      if (!card(k).querySelector('.name').value.trim()) { toast(`Type the name for ${s.label}`); card(k).querySelector('.name').focus(); return; }
+    }
+    await document.fonts.ready;
+    const W = +$('size').value, H = Math.round(W * 9 / 16);   // template is 16:9 within 0.05%
+    const clone = art.cloneNode(true);
+    clone.querySelectorAll('.ui-only').forEach((n) => n.remove());
+    clone.removeAttribute('id');
+    clone.setAttribute('width', W); clone.setAttribute('height', H);
+    const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(clone)], { type: 'image/svg+xml' }));
+    try {
+      const img = new Image(); img.src = url; await img.decode();
+      await new Promise((r) => setTimeout(r, 60));
+      const c = document.createElement('canvas'); c.width = W; c.height = H;
+      const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.drawImage(img, 0, 0, W, H);
+      const blob = await new Promise((r) => c.toBlob(r, type === 'jpg' ? 'image/jpeg' : 'image/png', 0.93));
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `Sunday-Live_${$('date').value || 'creative'}_${W}x${H}.${type}`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      toast('Downloaded ' + a.download);
+    } catch (err) { console.error(err); toast('Export failed. Try Chrome or Edge.'); }
+    finally { URL.revokeObjectURL(url); }
+  }
+
+  // ---------- init
+  async function init() {
+    await Promise.all(['500 100px "Montserrat"', '700 100px "Montserrat"', '900 100px "Montserrat"',
+      '600 100px "Anek Devanagari"', '700 100px "Anek Devanagari"', '700 100px "Bebas Neue"']
+      .map((f) => document.fonts.load(f, f.includes('Anek') ? 'मां' : 'A')));
+    measureLayouts();
+    ['dateLine', 'timeLine'].forEach((id) => centre($(id), topicMax));
+    for (const k of Object.keys(slots)) {
+      centre($(k + 'Name'), NAME_MAX_W);
+      centre($(k + 'T1'), NAME_MAX_W);
+      centre($(k + 'T2'), NAME_MAX_W);
+      // snap to the exact card centre
+      ['Name', 'T1', 'T2'].forEach((n) => $(k + n).setAttribute('x', (slots[k].x + slots[k].w / 2).toFixed(2)));
+    }
+
+    $('date').value = iso(nextSunday());
+    $('date').addEventListener('input', renderDate);
+    $('time').addEventListener('input', renderTime);
+    $('nextSun').addEventListener('click', () => { $('date').value = iso(nextSunday()); renderDate(); });
+    ['t1', 't2', 't3', 'h1', 'h2'].forEach((id) => $(id).addEventListener('input', renderTopic));
+    document.querySelectorAll('.seg button').forEach((b) => b.addEventListener('click', () => applyLang(b.dataset.lang)));
+    $('dlPng').addEventListener('click', () => download('png'));
+    $('dlJpg').addEventListener('click', () => download('jpg'));
+
+    for (const k of Object.keys(slots)) {
+      wireSlot(k);
+      const c = card(k);
+      fit($(k + 'Name'), val(c.querySelector('.name')));
+      fit($(k + 'T1'), c.querySelector('.t1').value.trim());
+      fit($(k + 'T2'), c.querySelector('.t2').value.trim());
+      layoutPhoto(k);
+    }
+    let saved = 'en';
+    try { saved = localStorage.getItem('sunday-lang') === 'hi' ? 'hi' : 'en'; } catch (e) { /* storage unavailable */ }
+    applyLang(saved); renderDate(); renderTime();
+    window.__sl = { slots, setPhoto, download };
+  }
+  init();
+})();
+</script>
+</body>
+</html>
