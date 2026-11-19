@@ -1,4 +1,4 @@
-# Asttrolok Live – Creative Generators
+# Asttrolok – Creative & Certificate Generators
 
 One-page tools for the weekly live creatives. Upload photos, type names (and the topic), pick the date, download PNG/JPG.
 
@@ -6,6 +6,7 @@ One-page tools for the weekly live creatives. Upload photos, type names (and the
 |---|---|---|
 | **Wednesday Live** (Har Budhwar Ab Hoga Uttar Waar) | `/` | host + astrologer photo & name, date, time |
 | **Sunday Live** (Live Session) | `/sunday/` | topic in English (3 lines) or Hindi (2 lines), two astrologers' photos, names & titles, date, time |
+| **Certificate** (Astro Shiromani) | `/certificate/` | student name, year (2024 / 2024-2025), certificate text incl. course name; PNG/JPG at 300 DPI or Print → Save as PDF (312×225 mm) |
 
 ## Use
 Open the GitHub Pages link in Chrome or Edge (or open `index.html` / `sunday/index.html` locally).
@@ -18,7 +19,7 @@ Open the GitHub Pages link in Chrome or Edge (or open `index.html` / `sunday/ind
 - Sizes: 1920×1080, 3840×2160, 1280×720.
 
 ## Edit the templates
-- UI and logic: `src/wednesday.html`, `src/sunday.html`, shared styles in `src/common.css`
+- UI and logic: `src/wednesday.html`, `src/sunday.html`, `src/certificate.html`, shared styles in `src/common.css`
 - Artwork: `assets/<creative>/template.svg` (CorelDRAW SVG export) plus `assets/<creative>/images/`
 - Fonts: `assets/fonts/`
 

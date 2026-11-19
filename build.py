@@ -43,7 +43,7 @@ def prepare_svg(path, fonts_css):
     return svg.replace("<![CDATA[", "<![CDATA[\n" + fonts_css + "\n", 1)
 
 
-NAV = [("wednesday", "Wednesday Live"), ("sunday", "Sunday Live")]
+NAV = [("wednesday", "Wednesday Live"), ("sunday", "Sunday Live"), ("certificate", "Certificate")]
 
 
 def page(src_name, svg, active, root_prefix):
@@ -197,6 +197,41 @@ def build_sunday():
     return page("sunday.html", svg, "sunday", "../")
 
 
+# ---------------------------------------------------------------- Certificate
+def build_certificate():
+    C = A / "certificate"
+    css = "\n".join([
+        font_face("Certificate", 400, "Certificate-Regular.ttf"),
+        font_face("Poppins", 700, "Poppins-Bold.ttf"),
+        # the course name had thin green outline copies in Corel (faux bold); reproduce as a stroke
+        ".courseStroke {stroke:#009846;stroke-width:7.62;stroke-linejoin:round}",
+    ])
+    svg = prepare_svg(C / "template.svg", css)
+    svg = svg.replace(r'xlink:href="Certificate_Images\Certificate_ImgID1.png"',
+                      f'xlink:href="{data_uri(C / "images" / "signature-left.png", "image/png")}"')
+    svg = svg.replace(r'xlink:href="Certificate_Images\Certificate_ImgID2.png"',
+                      f'xlink:href="{data_uri(C / "images" / "signature-right.png", "image/png")}"')
+
+    # drop the outline copies of "Astro Shiromani" and the invisible duplicate texts
+    svg, n = re.subn(r'\s*<path (?:id="[^"]*" )?class="fil15 str2" d="[^"]*"/>\s*<g>\s*</g>', "", svg)
+    if n != 14:
+        raise SystemExit(f"expected 14 outline paths, found {n}")
+    svg = must_sub(r'\s*<text x="6424.81" y="13215.26"  class="fil3 fnt1">has successfully completed </text>\s*'
+                   r'<text x="22210.7" y="13215.26"  class="fil3 fnt2">Course</text>\s*'
+                   r'<text x="25025.65" y="13215.26"  class="fil3 fnt1"> </text>', "", svg)
+
+    body = '''<text id="cName" x="13158.09" y="11969.38" class="fil14 fnt0">CHANDNI PORWAL</text>
+  <text id="cLine1" x="6424.81" y="13215.26"><tspan id="l1a" class="fil16 fnt1">has successfully completed </tspan><tspan id="l1b" class="fil17 fnt2 courseStroke">Astro Shiromani </tspan><tspan id="l1c" class="fil16 fnt2">Course</tspan></text>
+  <text id="cLine2" x="9086.06" y="14241.81" class="fil16 fnt1">His/Her performance was outstanding </text>
+  <text id="cLine3" x="11812.41" y="15256.83" class="fil16 fnt1">during the programme.</text>
+  <text id="cYear" x="14524.82" y="9451.3" class="fil16 fnt3">2024</text>
+ </g>
+</svg>
+'''
+    svg = must_sub(r'<text x="13158.09" y="11969.38"  class="fil14 fnt0">CHANDNI PORWAL</text>.*</svg>\s*$', body, svg, flags=re.S)
+    return page("certificate.html", svg, "certificate", "../")
+
+
 def write(rel, html):
     out = ROOT / rel
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -206,3 +241,4 @@ def write(rel, html):
 
 write("index.html", build_wednesday())
 write("sunday/index.html", build_sunday())
+write("certificate/index.html", build_certificate())

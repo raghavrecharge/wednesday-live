@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Certificate Generator</title>
+<style>
+/*COMMON_CSS*/
+  .inline3 { display: grid; grid-template-columns: 1.3fr 1fr .7fr; gap: 8px; }
+  .inline3 input.green { color: #00803c; font-weight: 600; }
+  .check { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+  .check input { accent-color: var(--green); }
+  .btns.stack { flex-wrap: wrap; }
+  .btns.stack .wide { flex-basis: 100%; }
+  .print-sheet { display: none; }
+  @page { size: 312mm 225mm; margin: 0; }
+  @media print {
+    body > *:not(.print-sheet) { display: none !important; }
+    body { background: #fff; }
+    .print-sheet { display: block; width: 312mm; height: 225mm; }
+    .print-sheet svg { width: 312mm; height: 225mm; display: block; }
+  }
+</style>
+</head>
+<body>
+<header><h1>Certificate · Generator</h1><span class="tag">ASTRO SHIROMANI</span><!--NAV--></header>
+
+<main>
+  <section class="panel">
+    <div class="card">
+      <h2>Student</h2>
+      <label for="name">Full name</label>
+      <input type="text" id="name" placeholder="e.g. Chandni Porwal" maxlength="40" autocomplete="off">
+      <label class="check"><input type="checkbox" id="caps" checked> Capital letters (as in the design)</label>
+      <label for="year">Year</label>
+      <input type="text" id="year" placeholder="2024 or 2024-2025" maxlength="12" inputmode="numeric">
+      <div class="hint" id="yearHint">Any year text: 2024, 2024-2025, 2024–25</div>
+    </div>
+
+    <div class="card">
+      <h2>Certificate text</h2>
+      <label>Line 1: before course · course name (green) · after</label>
+      <div class="inline3">
+        <input type="text" id="l1aIn" value="has successfully completed" maxlength="40">
+        <input type="text" id="l1bIn" class="green" value="Astro Shiromani" maxlength="40">
+        <input type="text" id="l1cIn" value="Course" maxlength="20">
+      </div>
+      <label for="l2In">Line 2</label><input type="text" id="l2In" value="His/Her performance was outstanding" maxlength="70">
+      <label for="l3In">Line 3</label><input type="text" id="l3In" value="during the programme." maxlength="70">
+      <button class="link" id="resetText" type="button" style="margin-top:8px">Reset to standard text</button>
+    </div>
+
+    <div class="card">
+      <h2>Download</h2>
+      <label for="size">Image size</label>
+      <select id="size">
+        <option value="3685">Print, 300 DPI (3685 × 2657)</option>
+        <option value="1843">Medium, 150 DPI (1843 × 1329)</option>
+        <option value="1200">Small, for WhatsApp/email (1200 × 865)</option>
+      </select>
+      <div class="btns stack">
+        <button class="primary" id="dlPng" type="button">Download PNG</button>
+        <button class="secondary" id="dlJpg" type="button">JPG</button>
+        <button class="secondary wide" id="print" type="button">Print / Save as PDF</button>
+      </div>
+      <p class="hint">For PDF, choose "Save as PDF" in the print dialog. The page size is already 312 × 225 mm with no margins.</p>
+    </div>
+  </section>
+
+  <section class="preview">
+    <div class="stage">
+<!--ARTWORK-->
+    </div>
+    <p class="tip">Grey text in the form is only a placeholder. Type the student's name and year before downloading. Long names and lines shrink automatically to fit.</p>
+  </section>
+</main>
+<div class="print-sheet" id="printSheet"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  const art = document.getElementById('art');
+  const $ = (id) => document.getElementById(id);
+  const VB_W = 31200, VB_H = 22500;
+  const PAGE_CX = VB_W / 2;
+  // the name sits on the dotted line after "Mr./Ms./Mrs" (measured: x 12100 to 24300)
+  const DOTS_L = 12100, DOTS_R = 24300;
+  const MAX = { cName: DOTS_R - DOTS_L, cLine1: 22500, cLine2: 22500, cLine3: 22500, cYear: 9000 };
+  let nameCx = 0;
+  const STD = { l1aIn: 'has successfully completed', l1bIn: 'Astro Shiromani', l1cIn: 'Course',
+                l2In: 'His/Her performance was outstanding', l3In: 'during the programme.' };
+
+  let toastT;
+  function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2800); }
+
+  // ---------- text
+  const base = new Map();
+  function centre(el) {
+    // the template text is the original design: measure it to find the designed centre
+    const c = parseFloat(el.getAttribute('x')) + el.getComputedTextLength() / 2;
+    // the design is centred on the page; snap when it is within a hair of it
+    el.setAttribute('x', (Math.abs(c - PAGE_CX) < 160 ? PAGE_CX : c).toFixed(2));
+    el.setAttribute('text-anchor', 'middle');
+    base.set(el, [...el.querySelectorAll('tspan')].concat(el.querySelector('tspan') ? [] : [el])
+      .map((n) => [n, parseFloat(getComputedStyle(n).fontSize)]));
+    return c;
+  }
+  function fitEl(el) {
+    const parts = base.get(el);
+    parts.forEach(([n, s]) => { n.style.fontSize = s + 'px'; });
+    const len = el.getComputedTextLength();
+    const limit = MAX[el.id];
+    if (len > limit) parts.forEach(([n, s]) => { n.style.fontSize = (s * limit / len).toFixed(2) + 'px'; });
+  }
+  const val = (input) => input.value.trim() || input.placeholder;
+
+  function render() {
+    const nm = val($('name'));
+    $('cName').textContent = $('caps').checked ? nm.toUpperCase() : nm;
+    $('cYear').textContent = val($('year'));
+    $('l1a').textContent = $('l1aIn').value.trim() + ' ';
+    $('l1b').textContent = $('l1bIn').value.trim() + ' ';
+    $('l1c').textContent = $('l1cIn').value.trim();
+    $('cLine2').textContent = $('l2In').value.trim();
+    $('cLine3').textContent = $('l3In').value.trim();
+    ['cName', 'cLine1', 'cLine2', 'cLine3', 'cYear'].forEach((id) => fitEl($(id)));
+    // keep the designed centre; a long name slides right along the dotted line instead of covering "Mrs"
+    const nameLen = $('cName').getComputedTextLength();
+    $('cName').setAttribute('x', Math.max(nameCx, DOTS_L + nameLen / 2).toFixed(2));
+  }
+
+  // ---------- export
+  function cleanClone(w, h) {
+    const clone = art.cloneNode(true);
+    clone.querySelectorAll('.ui-only').forEach((n) => n.remove());
+    clone.removeAttribute('id');
+    if (w) { clone.setAttribute('width', w); clone.setAttribute('height', h); }
+    return clone;
+  }
+  function ready() {
+    if (!$('name').value.trim()) { toast("Type the student's name first"); $('name').focus(); return false; }
+    if (!$('year').value.trim()) { toast('Type the year first'); $('year').focus(); return false; }
+    return true;
+  }
+  const fileBase = () => `Certificate_${$('name').value.trim().replace(/[^\w\- ]+/g, '').replace(/\s+/g, '-') || 'student'}_${$('year').value.trim().replace(/[^\w-]+/g, '')}`;
+
+  async function download(type) {
+    if (!ready()) return;
+    toast('Preparing image…');
+    await document.fonts.ready;
+    const W = +$('size').value, H = Math.round(W * VB_H / VB_W);
+    const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(cleanClone(W, H))], { type: 'image/svg+xml' }));
+    try {
+      const img = new Image(); img.src = url; await img.decode();
+      await new Promise((r) => setTimeout(r, 60));
+      const c = document.createElement('canvas'); c.width = W; c.height = H;
+      const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.drawImage(img, 0, 0, W, H);
+      const blob = await new Promise((r) => c.toBlob(r, type === 'jpg' ? 'image/jpeg' : 'image/png', 0.95));
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${fileBase()}.${type}`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      toast('Downloaded ' + a.download);
+    } catch (err) { console.error(err); toast('Export failed. Try Chrome or Edge.'); }
+    finally { URL.revokeObjectURL(url); }
+  }
+  async function printPdf() {
+    if (!ready()) return;
+    await document.fonts.ready;
+    const sheet = $('printSheet');
+    sheet.replaceChildren(cleanClone());
+    const prevTitle = document.title;
+    document.title = fileBase();          // becomes the suggested PDF file name
+    window.print();
+    document.title = prevTitle;
+  }
+
+  // ---------- init
+  async function init() {
+    await Promise.all(['400 100px "Certificate"', '700 100px "Poppins"'].map((f) => document.fonts.load(f)));
+    ['cName', 'cLine1', 'cLine2', 'cLine3', 'cYear'].forEach((id) => centre($(id)));
+    nameCx = parseFloat($('cName').getAttribute('x'));
+    ['name', 'year', 'l1aIn', 'l1bIn', 'l1cIn', 'l2In', 'l3In'].forEach((id) => $(id).addEventListener('input', render));
+    $('caps').addEventListener('change', render);
+    $('resetText').addEventListener('click', () => { Object.entries(STD).forEach(([id, v]) => { $(id).value = v; }); render(); });
+    $('dlPng').addEventListener('click', () => download('png'));
+    $('dlJpg').addEventListener('click', () => download('jpg'));
+    $('print').addEventListener('click', printPdf);
+    $('year').placeholder = `${new Date().getFullYear()}`;
+    render();
+    window.__cert = { render, download };
+  }
+  init();
+})();
+</script>
+</body>
+</html>
