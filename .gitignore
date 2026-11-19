@@ -1,0 +1,5 @@
+# sample photos of real people, local only
+test/
+.claude/
+__pycache__/
+*.png.tmp

@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wednesday Live Generator</title>
+<style>
+  :root {
+    --green: #006633; --green-2: #009933; --yellow: #F8C400;
+    --ink: #1c211e; --muted: #66706a; --line: #dfe4e0; --bg: #f3f5f3; --card: #fff;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 "Sora", system-ui, sans-serif; }
+  header { display: flex; align-items: center; gap: 12px; padding: 14px 24px; background: var(--green); color: #fff; }
+  header h1 { font-size: 17px; margin: 0; font-weight: 700; letter-spacing: .2px; }
+  header .tag { background: var(--yellow); color: var(--ink); font-weight: 700; font-size: 11px; padding: 3px 8px; border-radius: 4px; }
+  main { display: grid; grid-template-columns: 360px 1fr; gap: 20px; padding: 20px 24px; align-items: start; }
+  @media (max-width: 960px) { main { grid-template-columns: 1fr; } .preview { order: -1; } }
+
+  .panel { display: flex; flex-direction: column; gap: 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .card h2 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: var(--green); }
+  label { display: block; font-size: 12px; color: var(--muted); margin: 8px 0 4px; }
+  input[type=text], input[type=date], input[type=time], select {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 7px; font: inherit; color: var(--ink); background: #fff;
+  }
+  input:focus, select:focus { outline: 2px solid var(--green-2); outline-offset: -1px; border-color: transparent; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 6px; min-height: 17px; }
+  .hint.warn { color: #b25e00; }
+
+  .drop { display: flex; gap: 12px; align-items: center; border: 1.5px dashed #c5cdc7; border-radius: 9px; padding: 10px; cursor: pointer; transition: background .15s, border-color .15s; }
+  .drop:hover, .drop.over { background: #eef7f1; border-color: var(--green-2); }
+  .drop .thumb { width: 54px; height: 54px; border-radius: 50%; background: #e9ecea center/cover no-repeat; flex: none; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--line); }
+  .drop .txt { font-size: 12.5px; color: var(--muted); }
+  .drop .txt b { color: var(--ink); display: block; font-size: 13px; }
+  .zoom { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .zoom input { flex: 1; accent-color: var(--green); }
+  button { font: inherit; cursor: pointer; border-radius: 7px; }
+  .link { background: none; border: 0; color: var(--green); padding: 0; font-size: 12px; text-decoration: underline; }
+  .btns { display: flex; gap: 10px; margin-top: 12px; }
+  .primary { flex: 1; background: var(--green); color: #fff; border: 0; padding: 11px; font-weight: 700; }
+  .primary:hover { background: #00552a; }
+  .secondary { flex: 1; background: #fff; color: var(--green); border: 1.5px solid var(--green); padding: 10px; font-weight: 700; }
+  .secondary:hover { background: #eef7f1; }
+
+  .preview { position: sticky; top: 20px; }
+  .stage { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+  #art { display: block; width: 100%; height: auto; border-radius: 4px; user-select: none; touch-action: none; }
+  #art .hit { fill: transparent; cursor: grab; }
+  #art .hit.empty { cursor: pointer; }
+  #art .hit:active { cursor: grabbing; }
+  .tip { font-size: 12px; color: var(--muted); margin: 10px 2px 0; }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 9px 16px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<header><h1>Wednesday Live · Creative Generator</h1><span class="tag">उत्तर WAAR</span></header>
+
+<main>
+  <section class="panel">
+    <div class="card">
+      <h2>Date &amp; time</h2>
+      <div class="row">
+        <div><label for="date">Date</label><input type="date" id="date"></div>
+        <div><label for="time">Time (IST)</label><input type="time" id="time" value="19:30"></div>
+      </div>
+      <div class="hint" id="dateHint"></div>
+      <button class="link" id="nextWed" type="button">Set to next Wednesday</button>
+    </div>
+
+    <div class="card" data-slot="host">
+      <h2>Host</h2>
+      <div class="drop" tabindex="0"><div class="thumb"></div><div class="txt"><b>Upload host photo</b>Click or drop an image here</div></div>
+      <input type="file" accept="image/*" hidden>
+      <div class="zoom"><span>Zoom</span><input type="range" min="1" max="4" step="0.01" value="1"><button class="link reset" type="button">Reset</button></div>
+      <label>Name</label><input type="text" class="name" value="" placeholder="e.g. Heeru Verma" maxlength="40">
+      <label>Title</label><input type="text" class="role" value="Host" maxlength="40">
+    </div>
+
+    <div class="card" data-slot="astro">
+      <h2>Astrologer</h2>
+      <div class="drop" tabindex="0"><div class="thumb"></div><div class="txt"><b>Upload astrologer photo</b>Click or drop an image here</div></div>
+      <input type="file" accept="image/*" hidden>
+      <div class="zoom"><span>Zoom</span><input type="range" min="1" max="4" step="0.01" value="1"><button class="link reset" type="button">Reset</button></div>
+      <label>Name</label><input type="text" class="name" value="" placeholder="e.g. Anju Sharma" maxlength="40">
+      <label>Title</label><input type="text" class="role" value="Astrologer" maxlength="40">
+    </div>
+
+    <div class="card">
+      <h2>Download</h2>
+      <label for="size">Size</label>
+      <select id="size">
+        <option value="1920">1920 × 1080 (Full HD)</option>
+        <option value="3840">3840 × 2160 (4K, print quality)</option>
+        <option value="1280">1280 × 720 (light, WhatsApp)</option>
+      </select>
+      <div class="btns">
+        <button class="primary" id="dlPng" type="button">Download PNG</button>
+        <button class="secondary" id="dlJpg" type="button">JPG</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="preview">
+    <div class="stage">
+<!--ARTWORK-->
+    </div>
+    <p class="tip">Drag a photo in the preview to move it. Scroll over it, or use the slider, to zoom. Click an empty circle to upload.</p>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  const art = document.getElementById('art');
+  const $ = (id) => document.getElementById(id);
+  const VB_W = 7124.1, VB_H = 4007.3;
+  const R = 767.89, CY = 2513.39;
+  const NAME_MAX_W = 1780, ROLE_MAX_W = 1780;
+
+  const slots = {
+    host:  { cx: 3823.43, label: 'host',       img: null, w: 0, h: 0, zoom: 1, ox: 0, oy: 0 },
+    astro: { cx: 5749.05, label: 'astrologer', img: null, w: 0, h: 0, zoom: 1, ox: 0, oy: 0 },
+  };
+
+  // ---------- toast
+  let toastT;
+  function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600); }
+
+  // ---------- text helpers
+  const baseSize = new Map();
+  function centreText(el) {
+    // Corel stores left-aligned x; measure the original string to find the designed centre, then centre-anchor it.
+    const keep = el.textContent;
+    el.textContent = el.dataset.orig;
+    const centre = parseFloat(el.getAttribute('x')) + el.getComputedTextLength() / 2;
+    el.textContent = keep;
+    el.setAttribute('x', centre.toFixed(2));
+    el.setAttribute('text-anchor', 'middle');
+    baseSize.set(el.id, parseFloat(getComputedStyle(el).fontSize));
+  }
+  function setFitText(el, text, maxW) {
+    el.textContent = text;
+    const base = baseSize.get(el.id);
+    el.style.fontSize = base + 'px';
+    const len = text ? el.getComputedTextLength() : 0;
+    if (len > maxW) el.style.fontSize = (base * maxW / len).toFixed(2) + 'px';
+  }
+
+  // ---------- date / time
+  const MONTHS = ['Jan.', 'Feb.', 'Mar.', 'Apr.', 'May', 'June', 'July', 'Aug.', 'Sept.', 'Oct.', 'Nov.', 'Dec.'];
+  const suffix = (d) => (d % 100 >= 11 && d % 100 <= 13) ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[d % 10] || 'th');
+  const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  function nextWednesday() {
+    const d = new Date(); d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + ((3 - d.getDay() + 7) % 7));
+    return d;
+  }
+  let istGap = 0;
+  function renderDate() {
+    const v = $('date').value;
+    if (!v) return;
+    const [y, m, d] = v.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    $('dDay').textContent = d;
+    $('dSuf').textContent = suffix(d);
+    $('dRest').textContent = ` ${MONTHS[m - 1]} ${y}`;
+    const hint = $('dateHint');
+    if (dt.getDay() !== 3) { hint.textContent = `Heads up: this date is a ${dt.toLocaleDateString('en-IN', { weekday: 'long' })}.`; hint.className = 'hint warn'; }
+    else { hint.textContent = dt.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); hint.className = 'hint'; }
+  }
+  function renderTime() {
+    const v = $('time').value || '19:30';
+    let [h, mi] = v.split(':').map(Number);
+    const ap = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    const t = $('timeText');
+    t.textContent = `${h}:${String(mi).padStart(2, '0')} ${ap}`;
+    const boxX = parseFloat(t.getAttribute('x')) + t.getComputedTextLength() + istGap;
+    $('istBox').setAttribute('x', boxX.toFixed(2));
+    $('istText').setAttribute('x', (boxX + 49.76).toFixed(2));
+  }
+
+  // ---------- photos
+  function layoutPhoto(key) {
+    const s = slots[key];
+    const img = $(key + 'Img'), ph = $(key + 'Ph'), phT = $(key + 'PhText'), hit = $(key + 'Hit');
+    ph.setAttribute('cx', s.cx); ph.setAttribute('cy', CY); ph.setAttribute('r', R);
+    phT.setAttribute('x', s.cx); phT.setAttribute('y', CY + 40);
+    const has = !!s.img;
+    ph.style.display = phT.style.display = has ? 'none' : '';
+    img.style.display = has ? '' : 'none';
+    hit.classList.toggle('empty', !has);
+    if (!has) return;
+    const base = (2 * R) / Math.min(s.w, s.h);
+    const W = s.w * base * s.zoom, H = s.h * base * s.zoom;
+    const mx = W / 2 - R, my = H / 2 - R;           // keep the circle fully covered
+    s.ox = Math.max(-mx, Math.min(mx, s.ox));
+    s.oy = Math.max(-my, Math.min(my, s.oy));
+    img.setAttribute('x', (s.cx - W / 2 + s.ox).toFixed(2));
+    img.setAttribute('y', (CY - H / 2 + s.oy).toFixed(2));
+    img.setAttribute('width', W.toFixed(2));
+    img.setAttribute('height', H.toFixed(2));
+  }
+  function resetPhoto(key) {
+    const s = slots[key];
+    s.zoom = 1; s.ox = 0;
+    // portraits: favour the top of the photo, where the face usually is
+    const H = s.h * ((2 * R) / Math.min(s.w, s.h));
+    s.oy = s.h > s.w ? (H / 2 - R) * 0.55 : 0;
+    card(key).querySelector('input[type=range]').value = 1;
+    layoutPhoto(key);
+  }
+  const card = (key) => document.querySelector(`.card[data-slot="${key}"]`);
+
+  function loadFile(key, file) {
+    if (!file || !file.type.startsWith('image/')) { toast('Please choose an image file'); return; }
+    const reader = new FileReader();
+    reader.onload = () => setPhoto(key, reader.result, file.type);
+    reader.readAsDataURL(file);
+  }
+  function setPhoto(key, src, type) {
+    const im = new Image();
+    im.onload = () => {
+      // downscale big phone photos so the page and export stay fast
+      const MAX = 1800;
+      let url = src, w = im.naturalWidth, h = im.naturalHeight;
+      if (Math.max(w, h) > MAX) {
+        const k = MAX / Math.max(w, h);
+        w = Math.round(w * k); h = Math.round(h * k);
+        const c = document.createElement('canvas'); c.width = w; c.height = h;
+        c.getContext('2d').drawImage(im, 0, 0, w, h);
+        url = type === 'image/png' ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', 0.92);
+      }
+      Object.assign(slots[key], { img: url, w, h });
+      $(key + 'Img').setAttribute('href', url);
+      card(key).querySelector('.thumb').style.backgroundImage = `url("${url}")`;
+      card(key).querySelector('.txt b').textContent = 'Change photo';
+      resetPhoto(key);
+    };
+    im.onerror = () => toast('Could not read that image');
+    im.src = src;
+  }
+
+  function wireSlot(key) {
+    const c = card(key), drop = c.querySelector('.drop'), file = c.querySelector('input[type=file]');
+    const range = c.querySelector('input[type=range]'), hit = $(key + 'Hit');
+    drop.addEventListener('click', () => file.click());
+    drop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); file.click(); } });
+    file.addEventListener('change', () => { loadFile(key, file.files[0]); file.value = ''; });
+    for (const el of [drop, hit]) {
+      el.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); });
+      el.addEventListener('dragleave', () => drop.classList.remove('over'));
+      el.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('over'); loadFile(key, e.dataTransfer.files[0]); });
+    }
+    range.addEventListener('input', () => { slots[key].zoom = +range.value; layoutPhoto(key); });
+    c.querySelector('.reset').addEventListener('click', () => slots[key].img && resetPhoto(key));
+
+    const nameIn = c.querySelector('.name'), roleIn = c.querySelector('.role');
+    nameIn.addEventListener('input', () => setFitText($(key + 'Name'), nameIn.value.trim(), NAME_MAX_W));
+    roleIn.addEventListener('input', () => setFitText($(key + 'Role'), roleIn.value.trim(), ROLE_MAX_W));
+
+    // drag to move, wheel to zoom
+    let drag = null, moved = false;
+    hit.addEventListener('pointerdown', (e) => {
+      moved = false;
+      if (!slots[key].img) return;
+      drag = { x: e.clientX, y: e.clientY };
+      hit.setPointerCapture(e.pointerId);
+    });
+    hit.addEventListener('pointermove', (e) => {
+      if (!drag) return;
+      const k = VB_W / art.getBoundingClientRect().width;
+      slots[key].ox += (e.clientX - drag.x) * k;
+      slots[key].oy += (e.clientY - drag.y) * k;
+      drag = { x: e.clientX, y: e.clientY };
+      moved = true;
+      layoutPhoto(key);
+    });
+    hit.addEventListener('pointerup', () => { drag = null; });
+    hit.addEventListener('click', () => { if (!slots[key].img && !moved) file.click(); });
+    hit.addEventListener('wheel', (e) => {
+      if (!slots[key].img) return;
+      e.preventDefault();
+      const s = slots[key];
+      s.zoom = Math.max(1, Math.min(4, s.zoom * Math.exp(-e.deltaY * 0.0015)));
+      range.value = s.zoom;
+      layoutPhoto(key);
+    }, { passive: false });
+  }
+
+  // ---------- export
+  async function download(type) {
+    const missing = Object.entries(slots).filter(([, s]) => !s.img).map(([, s]) => s.label);
+    if (missing.length) { toast(`Add the ${missing.join(' and ')} photo first`); return; }
+    const emptyName = ['host', 'astro'].find((k) => !card(k).querySelector('.name').value.trim());
+    if (emptyName) { toast(`Type the ${slots[emptyName].label}'s name first`); return; }
+
+    await document.fonts.ready;
+    const W = +$('size').value, H = Math.round(W * VB_H / VB_W);
+    const clone = art.cloneNode(true);
+    clone.querySelectorAll('.ui-only').forEach((n) => n.remove());
+    clone.removeAttribute('id');
+    clone.setAttribute('width', W); clone.setAttribute('height', H);
+    const xml = new XMLSerializer().serializeToString(clone);
+    const url = URL.createObjectURL(new Blob([xml], { type: 'image/svg+xml' }));
+    try {
+      const img = new Image();
+      img.src = url;
+      await img.decode();
+      await new Promise((r) => setTimeout(r, 60)); // let embedded fonts settle
+      const c = document.createElement('canvas'); c.width = W; c.height = H;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+      ctx.drawImage(img, 0, 0, W, H);
+      const mime = type === 'jpg' ? 'image/jpeg' : 'image/png';
+      const blob = await new Promise((r) => c.toBlob(r, mime, 0.93));
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `Wednesday-Live_${$('date').value || 'creative'}_${W}x${H}.${type}`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      toast('Downloaded ' + a.download);
+    } catch (err) {
+      console.error(err);
+      toast('Export failed. Try Chrome or Edge.');
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  // ---------- init (after fonts, so measurements are right)
+  async function init() {
+    await Promise.all(['500 100px "Cera Pro"', '900 100px "Cera Pro"', '400 100px "Sora"', '700 100px "Sora"'].map((f) => document.fonts.load(f)));
+    ['hostName', 'hostRole', 'astroName', 'astroRole'].forEach((id) => centreText($(id)));
+
+    const t = $('timeText');
+    t.textContent = '7:30 PM';
+    istGap = 1777.61 - parseFloat(t.getAttribute('x')) - t.getComputedTextLength();
+
+    $('date').value = iso(nextWednesday());
+    $('date').addEventListener('input', renderDate);
+    $('time').addEventListener('input', renderTime);
+    $('nextWed').addEventListener('click', () => { $('date').value = iso(nextWednesday()); renderDate(); });
+    $('dlPng').addEventListener('click', () => download('png'));
+    $('dlJpg').addEventListener('click', () => download('jpg'));
+
+    for (const key of Object.keys(slots)) {
+      wireSlot(key);
+      const c = card(key);
+      setFitText($(key + 'Name'), c.querySelector('.name').value.trim(), NAME_MAX_W);
+      setFitText($(key + 'Role'), c.querySelector('.role').value.trim(), ROLE_MAX_W);
+      layoutPhoto(key);
+    }
+    renderDate();
+    renderTime();
+    window.__wl = { slots, setPhoto, layoutPhoto, download }; // handy for debugging
+  }
+  init();
+})();
+</script>
+</body>
+</html>
